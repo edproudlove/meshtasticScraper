@@ -15,3 +15,4 @@ TODO:
 9. Make the code modular -> can just download from github and run it (pip install etc)
 10. continous mode or just run it once....
 11. READINGS and RESULTS in ONE file -> append results to the end
+12. Document which firmware versions the code will work for (2.4.0 etc)
