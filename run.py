@@ -94,7 +94,7 @@ def main():
 
     filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
 
-    #Could go into meshScraper class?
+    #Could go into meshScraper class - not handelling multiple possible serial ports
     for port in list_ports.comports():
         if port.vid is not None:
             print(f"Serial Port Found: {port.device}")
@@ -104,10 +104,12 @@ def main():
     meshScraper = MeshScraper(ser_port = port_dev, filename = folder_path + filename)
     meshScraper.begin()
 
-    #Not sure why but you need to instantiate the bluetooth device after the serial thread othewise it dosent work
+    # You need to instantiate the bluetooth device after the serial thread othewise nothing comes through serial
     print('Connecting Bluetooth')
 
     try: 
+        # If this keeps failing - try connecting via bluetooth using the app on the PC before running this script
+        # Nothing can be connected to the node (via BLE) when this file is run but the PC will 'know' the node already
         client = BLEInterface(bleAdr)
     except Exception as e:
         print(e)
@@ -166,9 +168,9 @@ def main():
         
                 # Wait for the responce from any TraceRoute for n seconds -> if they are all accounted for end early
                 StartTime = time.time()
-                while time.time() < StartTime + RESPONSE_WAIT:
+                while time.time() < (StartTime + RESPONSE_WAIT):
                     time.sleep(0.25)
-                    if all(meshScraper.ble_scan_result.values):
+                    if all(meshScraper.ble_scan_result.values()):
                         break
                
                 for result_mesh_id in meshScraper.ble_scan_result:
