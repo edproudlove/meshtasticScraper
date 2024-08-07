@@ -2,7 +2,6 @@
 # Settings in config.ini including the antenna type and txPower 
 # CONTINUOUS mode will infinite loop - making a new file evry interval
 
-
 import sys 
 import serial
 from serial.tools import list_ports
@@ -17,9 +16,11 @@ import datetime
 import configparser
 import subprocess
 
-sys.path.append('/Users/ethan/Desktop/Summer_Internship_2024/Rssi_and_snr_tests/MLDataScraping/pythonmatser')
+sys.path.append('/Users/ethan/Desktop/Summer_Internship_2024/Rssi_and_snr_tests/MLDataScraping/pythonmaster_v2')
 import meshtastic
 from meshtastic.ble_interface import BLEInterface
+
+print("meshtastic module location:", os.path.dirname(meshtastic.__file__))
 
 from mesh_scraper import MeshScraper
 
@@ -27,7 +28,8 @@ from mesh_scraper import MeshScraper
 config = configparser.ConfigParser()
 config.read('config.ini')
 
-INTERVAL = config.getint('SETTINGS', 'interval', fallback=600)
+SCRAPE_INTERVAL = config.getint('SETTINGS', 'interval', fallback=600)
+RESPONSE_WAIT = config.getint('SETTINGS', 'response', fallback=120)
 CONTINUOUS = config.getboolean('SETTINGS', 'continuous', fallback=False)
 HOP_LIMIT = config.getint('SETTINGS', 'hoplimit', fallback=3)
 
@@ -39,8 +41,18 @@ async def setup_node():
     
     """
 
-    resp = subprocess.getoutput('meshtastic --info')
-    respSplit = resp.split('\n')[2].split(' ')
+    print("Setup")
+
+    MESHTSTIC_GLOABLE_PATH = '/Users/ethan/miniforge3/bin/meshtastic'
+
+    #Definetly need to make this moodular --> just run the install.sh or somthing
+    try: 
+        resp = subprocess.getoutput('/Users/ethan/miniforge3/bin/meshtastic --info') # resp = subprocess.getoutput('meshtastic --info') 
+        respSplit = resp.split('\n')[2].split(' ')
+    except Exception as e:
+        print(f"Failed to connect to a device over Serial -> Meshtastic CLI not working ...")
+        sys.exit(1)
+
     name = respSplit[1] + '_' + respSplit[2] 
 
     print(f"Node Name: {name}")
@@ -63,8 +75,9 @@ async def setup_node():
     #Reccomended to reset NodeDB regularly as the timeout scales with the nodes
     # If you start scraping and then reset the device -> you can keep scraping the debug stuff and use the ble 
     # basically it requires a restart to use ble and serial -> not sure why?
+
     print('Resetting Node DB')
-    resp = subprocess.getoutput('meshtastic --reset-nodedb')  
+    resp = subprocess.getoutput('/Users/ethan/miniforge3/bin/meshtastic --reset-nodedb')  #resp = subprocess.getoutput('meshtastic --reset-nodedb')  
     time.sleep(15)
 
     return bleAdr
@@ -102,7 +115,7 @@ def main():
         sys.exit(1)
  
     meshScraper.base_firmware_version = client.metadata.firmware_version
-    meshScraper.base_id = client.getMyNodeInfo()['user']['id'].replace('!', "0x")
+    meshScraper.base_id = client.getMyNodeInfo()['user']['id'].replace('!', "0x").replace('\r', '')
 
     meshScraper.init_file()
 
@@ -111,48 +124,55 @@ def main():
         counter = 0
         while True:
             
-            # could just do time.sleep(INTERVAL) - no counter - but its good for debugging
+            # could just do time.sleep(SCRAPE_INTERVAL) - no counter - but its good for debugging
             time.sleep(1)
             counter += 1
             print(counter)
 
-            if counter % INTERVAL == 0:
+            if counter % SCRAPE_INTERVAL == 0:
 
                 if not meshScraper.unique_id_array:
                     print(' No nodes / messages discovered during interval ')
+                    meshScraper.writeToFile(text='No Nodes Discovered')
+
+                    # Put this into an END LOOP function -> maybe just do this in MeshScraper
+                    if not CONTINUOUS:
+                        break
+
+                    filename = datetime.datetime.now().strftime("SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
+                    meshScraper.endBleScan(updated_filename = folder_path + filename) #In this case it just sets up a new test
+                    
 
                 meshScraper.startBleScan()
-                while meshScraper.unique_id_array:
-
-                    #Remove the items from front of list .... Can Run this loop over and over if continuous=True
-                    uniqueDest = meshScraper.unique_id_array.pop(0)
-
-                    #We get the ACK from the file rather than from the client -> sometimes the client misses it/ response isnt triggered
-                    meshScraper.CurrMeshID = uniqueDest
-                    meshScraper.BleTraceRouteACK = False
+                for mesh_id in meshScraper.unique_id_array:
 
                     # Needs to be in this format to be send via ble client
-                    uniqueDest = uniqueDest.replace('0x', '!') 
+                    mesh_id = mesh_id.replace('0x', '!') 
 
                     print('------------------------------------------------------------------')
-                    print(f'Sending TraceRoute to {uniqueDest}, Remaining Nodes: {meshScraper.unique_id_array}')
+                    print(f'Sending TraceRoute to {mesh_id}, Of Nodes: {meshScraper.unique_id_array}')
 
-                    #1. it is not handeling failed tracereoutes and errors well, -> maybe implement my own timeout / repsonse rather than waiting
-                    #2. it would be better if it filtered the incomming stream only to include the traceroute messages when this is happening
-                    #3. I have taken it out the try except block out... You need it appreantly otherwise if it fails the 
-                    #4. TRY CHANGING THE TIMEOUT CLASS IN MESHTASTIC UTILS -> also mabe record the time taken to arrive at that decision
-                    
+                    # The timeout can take over 15 mins and scales with hop limit and the no.nodes in the network 
+                    # -> Unsure why it does this: i have changed sorce code to timeout after 20s everytime
+
                     try: 
-                        client.sendTraceRoute(dest=uniqueDest, hopLimit=HOP_LIMIT) 
+                        client.sendTraceRoute(dest=mesh_id, hopLimit=HOP_LIMIT) 
                     
                     except Exception as e:
-                    # The timeout can take over 15 mins and scales with hop limit and the no.nodes in the network
-                        print(f'TraceRoute Failed: Timed out: {uniqueDest}: Exception {e}')
-                    
-                    # Wait for a response for at least 20s -> The BLE client can be hastey in assuming we have failed 
-                    time.sleep(20) # Use asyncio.sleep for non-blocking sleep
+                        print(f'TraceRoute Failed: Timed out: {mesh_id}: Exception {e}')
 
-                    fileStr = f" {meshScraper.CurrMeshID} ACK: {meshScraper.BleTraceRouteACK} "
+                    time.sleep(3)
+                    
+        
+                # Wait for the responce from any TraceRoute for n seconds -> if they are all accounted for end early
+                StartTime = time.time()
+                while time.time() < StartTime + RESPONSE_WAIT:
+                    time.sleep(0.25)
+                    if all(meshScraper.ble_scan_result.values):
+                        break
+               
+                for result_mesh_id in meshScraper.ble_scan_result:
+                    fileStr = f" {result_mesh_id} ACK: {meshScraper.ble_scan_result[result_mesh_id]} "
                     print(fileStr)
                     meshScraper.writeToFile(text=fileStr)
 
