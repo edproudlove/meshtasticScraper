@@ -11,6 +11,7 @@ DONE/OUTDATED
 16. Don't need to wait the entire response time if all the Nodes have been communicated with... (some sort of succsess) -> DONE
 14. Implement my own timeouts                                                      -> DONE
 7. Change the RX power antenna etc                                                 -> DONE (Would prefer itto be done in a .yml file)
+15. Add in how long we waited for a reponse for each Node?                         -> DONE
 
 
 DOING
@@ -19,13 +20,13 @@ DOING
         -> Removed timeouts from the meshtatsic.BLEInterface.sendTraceRotue(), this will only work on my machine -> Still need to make this dynamic (After an install/git pull)
 5. The Time-Out of the BLE interface is unreliable -> if we get a response tell the BLE to move on -> Sometimes it hangs for a long time 
         -> Think this is fixed by 4. but am not sure what was causing it in the first place (shouldnt have been hapening before 4 either)
+12. Document which firmware versions the code will work for (2.4.0 etc) - > same for verions of python CLI
+
 
 TODO:
-8. How should device be configured ... on running the script could send a config 
+8. How should device be configured ... on running the script could send a config.yml 
 9. Make the code modular -> can just download from github and run it (pip install/ .sh etc)
-12. Document which firmware versions the code will work for (2.4.0 etc) - > same for verions of python CLI
 13. Could make a branch of the Python CLI -> or replicate it in a diffrent file? ( How to handle the changes made to the python cli?)
-15. Add in how long we waited for a reponse for each Node?
 17. Logging rather than prints -> need to get rid of the meshtatsic logs -> DEBGUG settings for if it needs to be printed
 18. Will it always accept bluetooth conection? what about the pin/restarts
 19. Flash most recent firmware and go through every step to make documentation / tutorial

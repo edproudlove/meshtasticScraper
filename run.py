@@ -74,11 +74,12 @@ async def setup_node():
 
     print('Setting txPower')
     resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --set lora.tx_power {TX_POWER}')
-    time.sleep(15)
+    time.sleep(20)
 
+    #Do we still need this if i have removed the timeouts
     print('Resetting Node DB')
     resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --reset-nodedb')  #resp = subprocess.getoutput('meshtastic --reset-nodedb')  
-    time.sleep(15)
+    time.sleep(20)
 
     return bleAdr
 
@@ -92,8 +93,6 @@ def main():
 
     bleAdr = asyncio.run(setup_node())
 
-    filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
-
     #Could go into meshScraper class - not handelling multiple possible serial ports
     for port in list_ports.comports():
         if port.vid is not None:
@@ -101,8 +100,8 @@ def main():
             port_dev = port.device
 
     print('Initializing MeshScraper')
-    meshScraper = MeshScraper(ser_port = port_dev, filename = folder_path + filename)
-    meshScraper.begin() #Must do this before BLE config
+    meshScraper = MeshScraper(ser_port = port_dev)
+    meshScraper.begin() #Must do this before BLE config -> can still print to terminal but wount be written into a file until init_file
 
     # You need to instantiate the bluetooth device after the serial thread othewise nothing comes through serial
     print('Connecting Bluetooth')
@@ -121,7 +120,9 @@ def main():
 
     #It is possible to find nodes/get packets while the BLE is configuring that wount end up in the file
     #Maybe only write if file init = True
-    meshScraper.init_file()
+
+    filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
+    meshScraper.init_file(filename = folder_path + filename)
 
     # Main loop
     try:
@@ -136,19 +137,21 @@ def main():
             if counter % SCRAPE_INTERVAL == 0:
 
                 if not meshScraper.unique_id_array:
-                    print(' No nodes / messages discovered during interval ')
+                    print(' No nodes discovered during interval ')
                     meshScraper.writeToFile(text='No Nodes Discovered')
 
                     # Put this into an END LOOP function -> maybe just do this in MeshScraper
                     if not CONTINUOUS:
                         break
-
-                    filename = datetime.datetime.now().strftime("SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
-                    meshScraper.endBleScan(updated_filename = folder_path + filename) #In this case it just sets up a new test
-                    
-
+                    else:
+                        #In this case it just sets up a new test - Havent called startBleScan so dont need a reset
+                        filename = datetime.datetime.now().strftime("SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
+                        meshScraper.init_file(filename = folder_path + filename) 
+                        continue
+                        
                 meshScraper.startBleScan()
                 for mesh_id in meshScraper.unique_id_array:
+                    meshScraper.ble_scan_result[mesh_id]['START_TIME'] = time.time()
 
                     # Needs to be in this format to be send via ble client
                     mesh_id = mesh_id.replace('0x', '!') 
@@ -160,34 +163,36 @@ def main():
                     # -> Unsure why it does this: i have changed sorce code to timeout after 20s everytime
 
                     try: 
-                        client.sendTraceRoute(dest=mesh_id, hopLimit=HOP_LIMIT) 
+                        client.sendTraceRoute(dest=mesh_id, hopLimit=HOP_LIMIT)
                     
                     except Exception as e:
                         print(f'TraceRoute Failed: Timed out: {mesh_id}: Exception {e}')
 
                     time.sleep(3)
-                    
-        
+
+    
                 # Wait for the responce from any TraceRoute for n seconds -> if they are all accounted for end early
                 StartTime = time.time()
                 while time.time() < (StartTime + RESPONSE_WAIT):
                     time.sleep(0.25)
-                    if all(meshScraper.ble_scan_result.values()):
+                    if all(sub_dict['ACK'] for sub_dict in meshScraper.ble_scan_result.values()):
                         break
+                
+
+                print(f" SCAN RESULTS: {meshScraper.ble_scan_result}")
                
-                #Write all the responces into the file... Could make this a meshscraper function
-                for result_mesh_id in meshScraper.ble_scan_result:
-                    fileStr = f" {result_mesh_id} ACK: {meshScraper.ble_scan_result[result_mesh_id]} "
-                    print(fileStr)
-                    meshScraper.writeToFile(text=fileStr)
+                # Write all the responces into the file -> Do this in endBleScan
+                meshScraper.endBleScan() 
 
                 # if we arent looping - just end it
                 if not CONTINUOUS:
                     break
 
+                # Otherwise make a new file to start again
                 filename = datetime.datetime.now().strftime("SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
-                meshScraper.endBleScan(updated_filename = folder_path + filename) 
+                meshScraper.init_file(filename = folder_path + filename)
 
+                
         # if not in continous mode it will break and trigger this
         print('Terminating MeshScraper (Not in Continuous mode)')
         client.close()
