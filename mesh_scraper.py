@@ -26,7 +26,7 @@ CONTINUOUS = config.getboolean('SETTINGS', 'continuous', fallback=False)
 HOP_LIMIT = config.getint('SETTINGS', 'hoplimit', fallback=3)
 
 ANTENNA = config.get('NODE_CONFIG', 'antenna', fallback='mini')
-TX_POWER = config.get('NODE_CONFIG', 'txPower', fallback='27db')
+TX_POWER = config.getint('NODE_CONFIG', 'txPower', fallback=27)
 
 class MeshScraper():
     def __init__(self, 
@@ -46,6 +46,7 @@ class MeshScraper():
         self.curr_search_id = None
         
         self.meshTread = threading.Thread(target=self.scrape, args=(), daemon=True)
+        self.init_file_bool = False
 
         self.broadcastInfo = {
             'TIME': 'N/A', 
@@ -70,7 +71,7 @@ class MeshScraper():
     
     def init_file(self):
         ''' Write metadata to the file 
-        -> called in begin and BleEnd: becuase the filename changes
+        Should be called after begin and in BleEnd becuase the filename changes
         '''
 
         print(f'Writing Metadata to {self.filename}')
@@ -100,6 +101,8 @@ class MeshScraper():
         except Exception as e:
             print(f'Error Writing to File: {e}')
 
+        self.init_file_bool = True
+
 
     #Taken from the python docs
     def begin(self):
@@ -116,26 +119,6 @@ class MeshScraper():
         self.ser.close()
         if self.meshTread != threading.current_thread():
             self.meshTread.join()
-
-
-    def scrape(self):
-        ''' Thread that scrapes the Serial Data '''
-
-        try: 
-            while True: 
-                out = ''
-                time.sleep(0.25)
-                
-                while self.ser.inWaiting() > 0:
-                    out += self.ser.read(1).decode("latin-1")
-
-                if len(out) > 1:
-                    self.parseScrapeData(out)
-
-        # Might Need Editing -> Not sure this is getting triggered, and its already closing anyway
-        except Exception as e: 
-            print(f"Exception in rxThread --> Closing Serial: {e}")
-            self.close()
 
 
     def startBleScan(self):
@@ -156,6 +139,8 @@ class MeshScraper():
         if self.unique_id_array:
             for mesh_id in self.unique_id_array:
                 self.ble_scan_result[mesh_id] = False
+
+
         else:
             print('Shouldnt have started BLE scan - No Nodes Discovered')
 
@@ -170,8 +155,6 @@ class MeshScraper():
             print(f'Error Writing to File: {e}')
 
 
-
-
     def endBleScan(self, updated_filename):
         ''' 
         Function called when BLE scan ends 
@@ -180,7 +163,7 @@ class MeshScraper():
         -> and updates firstTime (and other things)
         -> New-File Init
         '''
-
+        self.init_file_bool = False #Semi-pointless when init_file is run it will be set back to True 
         self.filename = updated_filename
         self.ble_scan = False
         self.curr_search_id = None 
@@ -198,9 +181,29 @@ class MeshScraper():
                 f.write('\n')
         except Exception as e:
             print(f'Error Writing to File: {e}')
+
+
+    def scrape(self):
+        ''' Thread that scrapes the Serial Data '''
+
+        try: 
+            while True: 
+                out = ''
+                time.sleep(0.25)
+                
+                while self.ser.inWaiting() > 0:
+                    out += self.ser.read(1).decode("latin-1")
+
+                if len(out) > 1:
+                    self._parseScrapeData(out)
+
+        # Might Need Editing -> Not sure this is getting triggered, and its already closing anyway
+        except Exception as e: 
+            print(f"Exception in rxThread --> Closing Serial: {e}")
+            self.close()
             
 
-    def parseScrapeData(self, serialOutput):
+    def _parseScrapeData(self, serialOutput):
         ''' Function to parse the raw Serial Data into a file with a specified path '''
 
         outSplit = serialOutput.split('\n')
@@ -286,8 +289,11 @@ class MeshScraper():
             self.broadcastInfo['LON'] = findOccourance(importantContents, 'lonI=')
             self.broadcastInfo['TRACEROUTE'] = traceRoute if traceRoute != '' else 'N/A'
 
-            # Discard if self update / from=0x00 / No message ID / encrypted etc -> Last check while we are sending traceroutes only the reponses will be written into the file 
-            if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and not (self.broadcastInfo['TRACEROUTE'] == 'N/A' and self.ble_scan):
+            # Discard if: self update, No message ID, encrypted etc ->
+            # Last check: while we are sending traceroutes only the reponses will be written into the file 
+            # Wait for the file init to be run before trying to write too it .... (Still want to print the outputs though)
+
+            if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and not (self.broadcastInfo['TRACEROUTE'] == 'N/A' and self.ble_scan) and self.init_file_bool:
                 #unsure How but sometimes BaseId still ends up in the unique IDs
 
                 with open(self.filename, 'a') as f:

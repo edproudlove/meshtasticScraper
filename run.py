@@ -32,22 +32,21 @@ SCRAPE_INTERVAL = config.getint('SETTINGS', 'interval', fallback=600)
 RESPONSE_WAIT = config.getint('SETTINGS', 'response', fallback=120)
 CONTINUOUS = config.getboolean('SETTINGS', 'continuous', fallback=False)
 HOP_LIMIT = config.getint('SETTINGS', 'hoplimit', fallback=3)
+MESHTSTIC_GLOABLE_PATH = config.get('SETTINGS', 'meshtastic_bin_path', fallback='meshtastic')
+
+TX_POWER = config.getint('NODE_CONFIG', 'txPower', fallback=27)
 
 async def setup_node():
     """ 
-    
     Code to find the name and BLE address of the node connected via serial 
     returns: the ble-address to setup the BleakDevice 
-    
     """
 
     print("Setup")
 
-    MESHTSTIC_GLOABLE_PATH = '/Users/ethan/miniforge3/bin/meshtastic'
-
     #Definetly need to make this moodular --> just run the install.sh or somthing
     try: 
-        resp = subprocess.getoutput('/Users/ethan/miniforge3/bin/meshtastic --info') # resp = subprocess.getoutput('meshtastic --info') 
+        resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --info') # resp = subprocess.getoutput('meshtastic --info') 
         respSplit = resp.split('\n')[2].split(' ')
     except Exception as e:
         print(f"Failed to connect to a device over Serial -> Meshtastic CLI not working ...")
@@ -58,11 +57,8 @@ async def setup_node():
     print(f"Node Name: {name}")
 
     bleAdr = ''
-
     devices = await BleakScanner.discover()
-
     for device in devices:
-        # print(device)
         if device.name == name:
             bleAdr = device.address
 
@@ -74,10 +70,14 @@ async def setup_node():
 
     #Reccomended to reset NodeDB regularly as the timeout scales with the nodes
     # If you start scraping and then reset the device -> you can keep scraping the debug stuff and use the ble 
-    # basically it requires a restart to use ble and serial -> not sure why?
+    # basically it requires a restart to use ble and serial -> not sure why
+
+    print('Setting txPower')
+    resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --set lora.tx_power {TX_POWER}')
+    time.sleep(15)
 
     print('Resetting Node DB')
-    resp = subprocess.getoutput('/Users/ethan/miniforge3/bin/meshtastic --reset-nodedb')  #resp = subprocess.getoutput('meshtastic --reset-nodedb')  
+    resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --reset-nodedb')  #resp = subprocess.getoutput('meshtastic --reset-nodedb')  
     time.sleep(15)
 
     return bleAdr
@@ -102,7 +102,7 @@ def main():
 
     print('Initializing MeshScraper')
     meshScraper = MeshScraper(ser_port = port_dev, filename = folder_path + filename)
-    meshScraper.begin()
+    meshScraper.begin() #Must do this before BLE config
 
     # You need to instantiate the bluetooth device after the serial thread othewise nothing comes through serial
     print('Connecting Bluetooth')
@@ -119,6 +119,8 @@ def main():
     meshScraper.base_firmware_version = client.metadata.firmware_version
     meshScraper.base_id = client.getMyNodeInfo()['user']['id'].replace('!', "0x").replace('\r', '')
 
+    #It is possible to find nodes/get packets while the BLE is configuring that wount end up in the file
+    #Maybe only write if file init = True
     meshScraper.init_file()
 
     # Main loop
@@ -173,6 +175,7 @@ def main():
                     if all(meshScraper.ble_scan_result.values()):
                         break
                
+                #Write all the responces into the file... Could make this a meshscraper function
                 for result_mesh_id in meshScraper.ble_scan_result:
                     fileStr = f" {result_mesh_id} ACK: {meshScraper.ble_scan_result[result_mesh_id]} "
                     print(fileStr)
