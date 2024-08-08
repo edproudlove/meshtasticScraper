@@ -8,9 +8,10 @@ import serial
 import threading
 import configparser
 import os
+import re
 
 from serial.tools import list_ports
-from utils import findOccourance
+from utils import findOccourance, remove_ansi_escape
 
 
 # /dev/cu.usbmodemDC5475EE06B41 -> 06b4 firmware version 2.3.12
@@ -168,9 +169,9 @@ class MeshScraper():
         #First parse all the result data into the current file
         for result_mesh_id in self.ble_scan_result:
             if self.ble_scan_result[result_mesh_id]['ACK']:
-                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}, RESPONCE_TIME={self.ble_scan_result[result_mesh_id]['RESPONSE_WAIT_TIME']}"
+                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}, RESPONSE_TIME={self.ble_scan_result[result_mesh_id]['RESPONSE_WAIT_TIME']}"
             else: 
-                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}"
+                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}, RESPONSE_TIME=N/A"
 
             print(fileStr)
             self.writeToFile(text=fileStr)
@@ -203,9 +204,11 @@ class MeshScraper():
                 
                 while self.ser.inWaiting() > 0:
                     out += self.ser.read(1).decode("latin-1")
-
+                    
                 if len(out) > 1:
-                    self._parseScrapeData(out)
+                    #Need to remove the ansi escape chars (color) if firmware > 2.3.15
+                    #Review remove_ansi_escape if serial output text is strange/garbled
+                    self._parseScrapeData(remove_ansi_escape(out)) 
 
         except Exception as e: 
             print(f"Exception in rxThread --> Closing Serial: {e}")
@@ -223,7 +226,7 @@ class MeshScraper():
             traceRoute = ''
             
             for line in outSplit:
-                print(line)
+                print(remove_ansi_escape(line)) #Should have already had this called on the entire output data 
 
                 #Hacky method of pasring traceroutes: finding the "-->" in the string
                 if '-->' in line:
@@ -346,7 +349,7 @@ if __name__ == '__main__':
     meshScraper = MeshScraper(ser_port=port_dev)
     meshScraper.begin()
 
-    filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
+    # filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
     # meshScraper.init_file(filename=folder_path + filename) #For testing just print the data dont need to keep it
 
     try:
