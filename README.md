@@ -12,7 +12,7 @@
 
 ## SOFTWARE TUTORIAL FROM SCRATCH
 1. CREATE the pip venv:
-        $ python3 -m venv meshScraperEnv
+`$ python3 -m venv meshScraperEnv`
 
 2. ACTIVATE IT
         $ source meshScraperEnv/bin/activate
