@@ -3,7 +3,7 @@
 ## HARDWARE TUTORIAL FROM SCRATCH
 1. Install firmware to board: https://flasher.meshtastic.org (or other method)
 2. Connect to board via bluetooth using the meshtastic app on the same PC that it is connect to via serial
--        ^ may require 'forgetting' the device on bluetooth settings if you have already connected to it on the PC before the reset/firmware flash
+- ^ may require 'forgetting' the device on bluetooth settings if you have already connected to it on the PC before the reset/firmware flash
 
 3. Set lora.region to EU_868 (or relevent region)
 4. Disconnect bluetooth to node 
@@ -12,10 +12,10 @@
 
 ## SOFTWARE TUTORIAL FROM SCRATCH
 1. CREATE the pip venv:
-- $ python3 -m venv meshScraperEnv
+        $ python3 -m venv meshScraperEnv
 
 2. ACTIVATE IT
-- $ source meshScraperEnv/bin/activate
+        $ source meshScraperEnv/bin/activate
 
 3. INSTALL packadges into it
 - $ pip install -r requirements.txt
