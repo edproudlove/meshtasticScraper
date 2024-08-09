@@ -1,5 +1,40 @@
 # Meshtastic Scraper
 
+## HARDWARE TUTORIAL FROM SCRATCH
+1. Install firmware to board 
+2. Connect to board via bluetooth using the meshtastic app on the same PC that it is connect to via serial
+        ^ may require 'forgetting' the device on bluetooth settings first
+3. Set lora.region to EU_868 (or relevent region)
+4. Disconnect bluetooth to node 
+5. should be ready: update config.ini accordingly and in terminal run: python3 run.py
+
+
+## SOFTWARE TUTORIAL FROM SCRATCH
+1. in a new directory: git clone .....
+2. make a new pip env ....
+3. run the pip install in the env
+4. run the code from that env 
+
+
+
+### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
+2.3.10 (2.3.10.d19607b) -> <span style="color:orange"> NOT RECCOMENDED </span> Occasionally get Getting strange outputs in the serial data - may have just been a one off
+2.3.11 (2.3.11.2740a56) -> <span style="color:green"> WORKS </span>
+2.3.12 (2.3.12.24458a7) -> <span style="color:green"> WORKS </span> 
+2.3.13 (2.3.13.83f5ba0) -> <span style="color:green"> WORKS </span>
+
+Version 2.3.15 and above add colour to the serial debug - requires removal using utils.remove_ansi_escape()
+2.3.15 (2.3.15.deb7c27) -> WORKS
+2.4.0 (2.4.0.46d7b82) -> WORKS
+
+### PYTHON MESHTASTIC CLI VERSIONS (Will have a reccomended version in the requirements.txt): 
+2.3.11 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+2.3.12 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+2.3.13 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+
+2.3.14 -> <span style="color:green"> WORKS </span> sendTraceRoute hoplimit fixed in the changelogs: https://github.com/meshtastic/python/releases
+
+
 DONE/OUTDATED
 0. Find the Bluetooth device we are connected too over serial and clear its nodeDB -> DONE
 1. At a given point / time I want to begin the BLE traceroute stuff                -> DONE
@@ -33,34 +68,11 @@ TODO:
 17. Logging rather than prints -> need to get rid of the meshtatsic logs -> DEBGUG settings for if it needs to be printed
 20. Debug or Standby Mode 
 21. Implemnt sendText instead becuase traceroute is only working for my nodes?
+23. Might need a file ID or test id becuase its hard to tell what file and results are the same
 
 
-### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
-2.3.10 (2.3.10.d19607b) -> NOT RECOMENDED: Was getting strange outputs in the serial data - may have just been a one off
-2.3.11 (2.3.11.2740a56) -> WORKS
-2.3.12 (2.3.12.24458a7) -> WORKS 
-2.3.13 (2.3.13.83f5ba0) -> WORKS
-
-Version 2.3.15 and above add colour to the serial debug - requires removal using utils.remove_ansi_escape()
-2.3.15 (2.3.15.deb7c27) -> WORKS
-2.4.0 (2.4.0.46d7b82) -> WORKS
-
-### PYTHON MESHTASTIC CLI VERSIONS (Will have a reccomended version in the requirements.txt): 
-2.3.12 -> NOT RECCOMENDED (Cannot set hoplimit of traceroutes in this version -> will accept it as an argument tho)
 
 
-## TUTORIAL FROM SCRATCH
-1. Install firmware to board 
-2. Connect to board via bluetooth using the meshtastic app on the same PC that it is connect to via serial
-        ^ may require 'forgetting' the device on bluetooth settings first
-3. Set lora.region to EU_868 (or relevent region)
-4. Disconnect bluetooth to node 
-5. should be ready: update config.ini accordingly and in terminal run: python3 run.py
 
 
-## SOFTWARE TUTORIAL FROM SCRATCH
-1. in a new directory: git clone .....
-2. make a new pip env ....
-3. run the pip install in the env
-4. run the code from that env 
 
