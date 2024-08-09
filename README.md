@@ -18,61 +18,51 @@
 
 
 ### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
-2.3.10 (2.3.10.d19607b) -> <span style="color:orange"> NOT RECCOMENDED </span> Occasionally get Getting strange outputs in the serial data - may have just been a one off
-2.3.11 (2.3.11.2740a56) -> <span style="color:green"> WORKS </span>
-2.3.12 (2.3.12.24458a7) -> <span style="color:green"> WORKS </span> 
-2.3.13 (2.3.13.83f5ba0) -> <span style="color:green"> WORKS </span>
+- 2.3.10 (2.3.10.d19607b) -> ❌ NOT RECCOMENDED Occasionally get Getting strange outputs in the serial data - may have just been a one off
 
-Version 2.3.15 and above add colour to the serial debug - requires removal using utils.remove_ansi_escape()
-2.3.15 (2.3.15.deb7c27) -> WORKS
-2.4.0 (2.4.0.46d7b82) -> WORKS
+- 2.3.11 (2.3.11.2740a56) -> ✅ WORKS 
+- 2.3.12 (2.3.12.24458a7) -> ✅ WORKS  
+- 2.3.13 (2.3.13.83f5ba0) -> ✅ WORKS 
+
+###### Version 2.3.15 and above add colour to the serial debug - requires removal using utils.remove_ansi_escape()
+- 2.3.15 (2.3.15.deb7c27) -> WORKS
+- 2.4.0 (2.4.0.46d7b82) -> WORKS
 
 ### PYTHON MESHTASTIC CLI VERSIONS (Will have a reccomended version in the requirements.txt): 
-2.3.11 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
-2.3.12 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
-2.3.13 -> <span style="color:red"> FAILS </span>  (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+- 2.3.11 -> ❌ FAILS (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+- 2.3.12 -> ❌ FAILS (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
+- 2.3.13 -> ❌ FAILS (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)
 
-2.3.14 -> <span style="color:green"> WORKS </span> sendTraceRoute hoplimit fixed in the changelogs: https://github.com/meshtastic/python/releases
-
-
-DONE/OUTDATED
-0. Find the Bluetooth device we are connected too over serial and clear its nodeDB -> DONE
-1. At a given point / time I want to begin the BLE traceroute stuff                -> DONE
-2. The BLE will send traceRoutes to each Node in meshScraper.unique_id_arr         -> DONE
-3. Responce will be input into a NEW file (need to change the self.filename)       -> OUTDATED
-6. Make finding the BLE scanner dynamic                                            -> DONE
-10. continous mode or just run it once....                                         -> DONE
-11. READINGS and RESULTS in ONE file -> append results to the end                  -> DONE with 3. 
-16. Don't need to wait the entire response time if all the Nodes have been communicated with... (some sort of succsess) -> DONE
-14. Implement my own timeouts                                                      -> DONE
-7. Change the RX power antenna etc                                                 -> DONE (Would prefer itto be done in a .yml file)
-15. Add in how long we waited for a reponse for each Node?                         -> DONE
-18. Will it always accept bluetooth conection? what about the pin/restarts         -> DONE: Requires the PC connected first if the node has been reset/new firmware -> also requires lora.region set
-22. Change file formatting
+- 2.3.14 -> ✅ WORKS sendTraceRoute hoplimit fixed in the changelogs: https://github.com/meshtastic/python/releases
 
 
-DOING
-4. Could have a sign for if the traceroute has began, -> start a timer, if we do not recive a traceRoute with the relevent id then ACK = 0
-        -> SORT OF: By resetting the nodeDB the timeout should shorten, still need to eliminate false negatives (below)
-        -> Removed timeouts from the meshtatsic.BLEInterface.sendTraceRotue(), this will only work on my machine -> Still need to make this dynamic (After an install/git pull)
-5. The Time-Out of the BLE interface is unreliable -> if we get a response tell the BLE to move on -> Sometimes it hangs for a long time 
-        -> Think this is fixed by 4. but am not sure what was causing it in the first place (shouldnt have been hapening before 4 either)
-12. Document which firmware versions the code will work for (2.4.0 etc) - > same for verions of python CLI
-19. Flash most recent firmware and go through every step to make documentation / tutorial
-        -> add conda/env stuff setup from fresh pc
+### TODO LOG 
 
-TODO:
-8. How should device be configured ... on running the script could send a config.yml 
-9. Make the code modular -> can just download from github and run it (pip install/ .sh etc)
-13. Could make a branch of the Python CLI -> or replicate it in a diffrent file? ( How to handle the changes made to the python cli?)
-17. Logging rather than prints -> need to get rid of the meshtatsic logs -> DEBGUG settings for if it needs to be printed
-20. Debug or Standby Mode 
-21. Implemnt sendText instead becuase traceroute is only working for my nodes?
-23. Might need a file ID or test id becuase its hard to tell what file and results are the same
+#### DONE/OUTDATED
+- Find the Bluetooth device we are connected to over serial and clear its nodeDB 
+- The BLE will send traceRoutes to each Node in meshScraper.unique_id_arr         
+- Response will be input into a NEW file (need to change the self.filename)       
+- Make finding the BLE scanner dynamic                                            
+- Continuous mode or just run it once....                                        
+- Don't need to wait the entire response time if all the Nodes have been communicated with... (some sort of success)
+- Implement my own timeouts / sendTraceRoute                                                     
+- Change the RX power antenna etc                                                 
+- Add in how long we waited for a response for each Node?                         
+- Will it always accept Bluetooth connection? What about the pin/restarts? Requires the PC connected first if the node has been reset/new firmware -> also requires lora.region set
+- Change file formatting
+- Could have a sign for if the traceroute has begun, -> start a timer, if we do not receive a traceRoute with the relevant id then ACK = 0
+- Fix the Time-Out of the BLE interface is unreliable -> if we get a response tell the BLE to move on -> Sometimes it hangs for a long time 
 
+#### DOING
+- Document which firmware versions the code will work for (2.4.0 etc) -> same for versions of Python CLI
+- Flash most recent firmware and go through every step to make documentation / tutorial
+  -> add conda/env stuff setup from fresh PC
 
-
-
-
-
+#### TODO:
+- How should the device be configured ... on running the script could send a config.yml 
+- Make the code modular -> can just download from GitHub and run it (pip install/ .sh etc)
+- Logging rather than prints -> need to get rid of the meshtastic logs -> DEBUG settings for if it needs to be printed
+- Debug or Standby Mode 
+- Implement sendText instead because traceroute is only working for my nodes?
+- Might need a file ID or test ID because it's hard to tell what file and results are the same
 
