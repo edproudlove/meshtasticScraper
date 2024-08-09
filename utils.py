@@ -1,5 +1,7 @@
 #Usefull functions for parsing scraped data etc
 import re
+import meshtastic.mesh_pb2 as mesh_pb2
+import meshtastic.portnums_pb2 as portnums_pb2
 
 def remove_ansi_escape(output):
     ''' Function removes ansi escape charictors 
@@ -33,3 +35,24 @@ def findOccourance(listToSearch, tragetString):
 
     #If its not there return N/A
     return 'N/A'
+
+
+
+# https://github.com/meshtastic/python/blob/master/meshtastic/mesh_interface.py -> line 530
+def sendTraceRoute(client, dest, hopLimit):
+    ''' 
+    Instead of using client.sendTraceRoute() 
+    -> This fuction does exactly the same but with out the timeout or onResponse() 
+    Both of theese are done in the main() loop or in meshScraper 
+    
+    (basically a copy of the python cli function)
+    '''
+    r = mesh_pb2.RouteDiscovery()
+    client.sendData(
+        r,
+        destinationId=dest,
+        portNum=portnums_pb2.PortNum.TRACEROUTE_APP,
+        wantResponse=True,
+        channelIndex=0,
+        hopLimit=hopLimit,
+    )

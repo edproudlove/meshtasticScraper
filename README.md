@@ -13,6 +13,7 @@ DONE/OUTDATED
 7. Change the RX power antenna etc                                                 -> DONE (Would prefer itto be done in a .yml file)
 15. Add in how long we waited for a reponse for each Node?                         -> DONE
 18. Will it always accept bluetooth conection? what about the pin/restarts         -> DONE: Requires the PC connected first if the node has been reset/new firmware -> also requires lora.region set
+22. Change file formatting
 
 
 DOING
@@ -24,9 +25,6 @@ DOING
 12. Document which firmware versions the code will work for (2.4.0 etc) - > same for verions of python CLI
 19. Flash most recent firmware and go through every step to make documentation / tutorial
         -> add conda/env stuff setup from fresh pc
-
-
-
 
 TODO:
 8. How should device be configured ... on running the script could send a config.yml 
@@ -58,3 +56,11 @@ Version 2.3.15 and above add colour to the serial debug - requires removal using
 3. Set lora.region to EU_868 (or relevent region)
 4. Disconnect bluetooth to node 
 5. should be ready: update config.ini accordingly and in terminal run: python3 run.py
+
+
+## SOFTWARE TUTORIAL FROM SCRATCH
+1. in a new directory: git clone .....
+2. make a new pip env ....
+3. run the pip install in the env
+4. run the code from that env 
+

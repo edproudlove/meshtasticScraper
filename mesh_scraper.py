@@ -8,11 +8,9 @@ import serial
 import threading
 import configparser
 import os
-import re
 
 from serial.tools import list_ports
 from utils import findOccourance, remove_ansi_escape
-
 
 # /dev/cu.usbmodemDC5475EE06B41 -> 06b4 firmware version 2.3.12
 # /dev/cu.usbmodemDC5475EDEE941 -> ee94 firmware version 2.3.16
@@ -28,6 +26,7 @@ HOP_LIMIT = config.getint('SETTINGS', 'hoplimit', fallback=3)
 
 ANTENNA = config.get('NODE_CONFIG', 'antenna', fallback='mini')
 TX_POWER = config.getint('NODE_CONFIG', 'txPower', fallback=27)
+BAND = config.get('NODE_CONFIG', 'band', fallback='EU_868')
 
 class MeshScraper():
     def __init__(self, 
@@ -67,52 +66,64 @@ class MeshScraper():
         }
 
     
-    def init_file(self, filename):
+    def init_file(self, filename, is_results=False):
         ''' Instantiate file and write metadata to it
 
         Should be called after begin and after BleEnd to change the file for diffrent data
+        
+        Filename = name of file to create (needs to include a foler name)
+        is_results = is this a results file - means the column names will be diffrent
         '''
 
-        #Instatntiate file + Metadata
+        # Create file (Could call this in the begin function but its called just before the main loop to get exactly 2 mins)
         self.filename = filename
-        print(f'Writing Metadata to {self.filename}')
+        print(f' Writing to: {self.filename}')
 
-        self.file_metadata = {
-            'TIMESTAMP': datetime.datetime.now().strftime(f"%Y%m%d_%H:%M:%S"),
-            'SCRAPE_INTERVAL': SCRAPE_INTERVAL,
-            'RESPONSE_WAIT': RESPONSE_WAIT,
-            'CONTINUOUS': CONTINUOUS,
-            'ANTENNA': ANTENNA,
-            'TX_POWER': TX_POWER,
-            'TR_HOPLIMIT':HOP_LIMIT,
-            'BASE_ID': self.base_id, 
-            'FIRMWARE_V': self.base_firmware_version, 
-        }
+        if is_results:
+            try:
+                with open(self.filename, 'w') as f:
+                    f.write('TR_TIMESTAMP,ID,ACK,\n')
+                    
+            except Exception as e:
+                print(f'Error Writing to File: {e}')
+        
+        else:
+            # Scraping the mesh 
+            # -> create file_metadata (dont need to change this for the results its the same)
+            # -> Write the scraping headers to the file 
 
-        try:
-            with open(self.filename, 'w') as f:
-                f.write(','.join(self.file_metadata.keys()))
-                f.write('\n')
-                f.write(','.join(str(x) for x in self.file_metadata.values()))
-                f.write('\n')
-                f.write('------------------------------------------------------------------\n')
-                f.write(','.join(self.broadcastInfo.keys()))
-                f.write('\n')
-                
-        except Exception as e:
-            print(f'Error Writing to File: {e}')
+            self.file_metadata = {
+                'TIMESTAMP': datetime.datetime.now().strftime(f"%Y%m%d_%H:%M:%S"),
+                'SCRAPE_INTERVAL': SCRAPE_INTERVAL,
+                'RESPONSE_WAIT': RESPONSE_WAIT,
+                'CONTINUOUS': CONTINUOUS,
+                'ANTENNA': ANTENNA,
+                'TX_POWER': TX_POWER,
+                'TR_HOPLIMIT':HOP_LIMIT,
+                'BAND': BAND,
+                'BASE_ID': self.base_id, 
+                'FIRMWARE_V': self.base_firmware_version, 
+            }
 
-        #Allow mesh-data to be written into the file aswell (_parseScrapeData)
-        self.init_file_bool = True
+            # Dont write metadata
+            try:
+                with open(self.filename, 'w') as f:
+                    f.write(','.join(self.broadcastInfo.keys()))
+                    f.write('\n')
+                    
+            except Exception as e:
+                print(f'Error Writing to File: {e}')
+
+            #Allow mesh-data to be written into the file aswell (_parseScrapeData)
+            self.init_file_bool = True
 
 
-    #Taken from the python docs
+    #Taken begin() and close() are adpated from meshtastic python docs
     def begin(self):
         '''Begining the thread '''
         
         print('Begining the Thread')
         self.meshTread.start()
-
 
     def close(self):
         '''Ending the thread'''
@@ -142,19 +153,12 @@ class MeshScraper():
                 self.ble_scan_result[mesh_id] = {
                     'ACK': False,
                     'START_TIME': None,
-                    'RESPONSE_WAIT_TIME': None
+                    'START_TIMESTAMP': None,
+                    'RESPONSE_WAIT_TIME': None,
                 }
         else:
             print('Shouldnt have started BLE scan - No Nodes Discovered')
         
-        try:
-            with open(self.filename, 'a') as f:
-                f.write('------------------------------------------------------------------\n')
-                f.write(','.join(self.broadcastInfo.keys()))
-                f.write('\n')
-
-        except Exception as e:
-            print(f'Error Writing to File: {e}')
 
 
     def endBleScan(self):
@@ -162,21 +166,17 @@ class MeshScraper():
         Function called when BLE scan ends 
         
         -> changes filename (if we are doing a CONTINOUS loop we want a new file 
-        -> and updates firstTime (and other things)
-        -> New-File Init
+        -> and updates self vars essentially a reset() (and other things)
         '''
 
+        print(' ------- SCAN RESULTS ------- ')
         #First parse all the result data into the current file
         for result_mesh_id in self.ble_scan_result:
-            if self.ble_scan_result[result_mesh_id]['ACK']:
-                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}, RESPONSE_TIME={self.ble_scan_result[result_mesh_id]['RESPONSE_WAIT_TIME']}"
-            else: 
-                fileStr = f"{result_mesh_id}: ACK={self.ble_scan_result[result_mesh_id]['ACK']}, RESPONSE_TIME=N/A"
-
+            fileStr = f"{self.ble_scan_result[result_mesh_id]['TR_TIMESTAMP']}, {result_mesh_id}, {self.ble_scan_result[result_mesh_id]['ACK']}"
             print(fileStr)
             self.writeToFile(text=fileStr)
 
-        # Reset -> Call init_after this with new filename
+        # Reset -> Call init_after this with new filename (if its continuous)
         self.init_file_bool = False 
         self.ble_scan = False
         self.ble_scan_result = {}
@@ -291,10 +291,10 @@ class MeshScraper():
             self.broadcastInfo['TRACEROUTE'] = traceRoute if traceRoute != '' else 'N/A'
 
             # Discard if: self update, No message ID, encrypted etc ->
-            # Last check: while we are sending traceroutes only the reponses will be written into the file 
+            # Last check: while we are sending traceroutes dont write to file.
             # Wait for the file init to be run before trying to write too it .... (Still want to print the outputs though)
 
-            if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and (self.init_file_bool) and not (self.broadcastInfo['TRACEROUTE'] == 'N/A' and self.ble_scan):
+            if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and (self.init_file_bool) and not (self.ble_scan):
                 #unsure How but sometimes BaseId still ends up in the unique IDs
 
                 with open(self.filename, 'a') as f:
@@ -319,15 +319,12 @@ class MeshScraper():
                 if not (self.ble_scan_result[trace_mesh_id]['ACK']) and (self.ble_scan_result[trace_mesh_id]['START_TIME'] is not None): #i.e if Start time has been set -> we are looking for this one
                     self.ble_scan_result[trace_mesh_id]['ACK'] = True
                     self.ble_scan_result[trace_mesh_id]['RESPONSE_WAIT_TIME'] = time.time() - self.ble_scan_result[trace_mesh_id]['START_TIME']
-
-                print(self.ble_scan_result)
                 
 
         # -> or somehow we are looking for baseID or the result dict does not have the Id we have found
         except Exception as e:
             print(f'EXCEPT: {e}')
             pass
-
 
 
              
