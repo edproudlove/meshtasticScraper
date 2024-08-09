@@ -15,16 +15,16 @@
 `$ python3 -m venv meshScraperEnv`
 
 2. ACTIVATE IT
-        $ source meshScraperEnv/bin/activate
+`$ source meshScraperEnv/bin/activate`
 
 3. INSTALL packadges into it
-- $ pip install -r requirements.txt
+`$ pip install -r requirements.txt`
 
 4. Make a new directory and clone the git repo:
-- $ git clone https://github.com/edproudlove/meshtasticScraper.git
+`$ git clone https://github.com/edproudlove/meshtasticScraper.git`
 
 5. with the env activated run the run.py file:
-- $ python3 run.py 
+`$ python3 run.py`
 
 
 ### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
