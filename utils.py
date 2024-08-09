@@ -1,7 +1,7 @@
-#Usefull functions for parsing scraped data etc
+# Usefull functions for parsing scraped data etc
 import re
 
-#Version 2.3.13 changed theese imports:
+# Meshtastic Version 2.3.13 changed theese imports:
 try:
     import meshtastic.mesh_pb2 as mesh_pb2
     import meshtastic.portnums_pb2 as portnums_pb2
@@ -43,13 +43,12 @@ def findOccourance(listToSearch, tragetString):
     return 'N/A'
 
 
-
 # https://github.com/meshtastic/python/blob/master/meshtastic/mesh_interface.py -> line 530
 def sendTraceRoute(client, dest, hopLimit):
     ''' 
-    Instead of using client.sendTraceRoute() 
+    Instead of using client.sendTraceRoute() (MeshInterface.sendTraceRoute())
     -> This fuction does exactly the same but with out the timeout or onResponse() 
-    Both of theese are done in the main() loop or in meshScraper 
+    Both of theese are done in the main() loop or in meshScraper - just look at the serial output to see if we got a response
     
     (basically a copy of the python cli function)
     '''

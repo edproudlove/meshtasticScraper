@@ -3,33 +3,32 @@
 ## HARDWARE TUTORIAL FROM SCRATCH
 1. Install firmware to board: https://flasher.meshtastic.org (or other method)
 2. Connect to board via bluetooth using the meshtastic app on the same PC that it is connect to via serial
-        ^ may require 'forgetting' the device on bluetooth settings first
+-        ^ may require 'forgetting' the device on bluetooth settings if you have already connected to it on the PC before the reset/firmware flash
+
 3. Set lora.region to EU_868 (or relevent region)
 4. Disconnect bluetooth to node 
-5. should be ready: update config.ini accordingly and in terminal run: python3 run.py
+5. Should be ready: update config.ini accordingly and in terminal run: python3 run.py
 
 
 ## SOFTWARE TUTORIAL FROM SCRATCH
 1. CREATE the pip venv:
-$ python3 -m venv meshScraperEnv
+- $ python3 -m venv meshScraperEnv
 
 2. ACTIVATE IT
-$ source meshScraperEnv/bin/activate
+- $ source meshScraperEnv/bin/activate
 
 3. INSTALL packadges into it
-$ pip install -r requirements.txt
+- $ pip install -r requirements.txt
 
+4. Make a new directory and clone the git repo:
+- $ git clone https://github.com/edproudlove/meshtasticScraper.git
 
-
-1. in a new directory: git clone .....
-2. make a new pip env ....
-3. run the pip install in the env
-4. run the code from that env 
-
+5. with the env activated run the run.py file:
+- $ python3 run.py 
 
 
 ### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
-- 2.3.10 (2.3.10.d19607b) -> ✅ WORKS Occasionally get Getting strange outputs in the serial data - may have just been a one off
+- 2.3.10 (2.3.10.d19607b) -> ✅ WORKS Occasionally getting strange outputs in the serial data - may have just been a one off
 - 2.3.11 (2.3.11.2740a56) -> ✅ WORKS 
 - 2.3.12 (2.3.12.24458a7) -> ✅ WORKS  
 - 2.3.13 (2.3.13.83f5ba0) -> ✅ WORKS 
@@ -70,9 +69,9 @@ $ pip install -r requirements.txt
 
 #### TODO:
 - How should the device be configured ... on running the script could send a config.yml 
-- Make the code modular -> can just download from GitHub and run it (pip install/ .sh etc)
-- Logging rather than prints -> need to get rid of the meshtastic logs -> DEBUG settings for if it needs to be printed
-- Debug or Standby Mode 
+- Make the code modular -> can just download from GitHub and run it (pip install/ .sh etc) or tutorial
+- Logging rather than prints -> need to get rid of the meshtastic logs 
+- DEBUG settings for if it needs to be printed: Debug or Standby Mode 
 - Implement sendText instead because traceroute is only working for my nodes?
-- Might need a file ID or test ID because it's hard to tell what file and results are the same
-
+- Might need a file ID or test ID because it's hard to tell what file and results are a pair
+- Sort out config imports into both files

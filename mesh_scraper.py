@@ -1,5 +1,4 @@
 # Scrapes the Mesh information from the serial port and enters it into the CSV
-# This runs in the background for entire thing, after xxx time the BLE will be submitted
 # Using Threading -> MeshScaper Obj 
 
 import time 
@@ -11,10 +10,6 @@ import os
 
 from serial.tools import list_ports
 from utils import findOccourance, remove_ansi_escape
-
-# /dev/cu.usbmodemDC5475EE06B41 -> 06b4 firmware version 2.3.12
-# /dev/cu.usbmodemDC5475EDEE941 -> ee94 firmware version 2.3.16
-# /dev/cu.usbmodemDC5475EE06DC1 -> 06dc fimrware version 2.3.13
 
 config = configparser.ConfigParser()
 config.read('config.ini')
@@ -29,11 +24,9 @@ TX_POWER = config.getint('NODE_CONFIG', 'txPower', fallback=27)
 BAND = config.get('NODE_CONFIG', 'band', fallback='EU_868')
 
 class MeshScraper():
-    def __init__(self, 
-        ser_port): 
-
+    def __init__(self, ser_port): 
         self.ser = serial.Serial(port=ser_port, baudrate=115200)
-        self.filename = None #Maybe just make this a placeholder -> set with init_file()
+        self.filename = None
 
         self.base_id = None
         self.base_firmware_version =  None
@@ -49,7 +42,7 @@ class MeshScraper():
             'TIME': 'N/A', 
             'MESSAGE_TYPE': 'N/A',
             'AIR_TIME': 'N/A',
-            'RX_TIME': 'N/A', #filter out msg and floodmsg
+            'RX_TIME': 'N/A',
             'MESSAGE_ID': 'N/A', 
             'NODE_ID': 'N/A', 
             'SNR':'N/A',
@@ -105,7 +98,7 @@ class MeshScraper():
                 'FIRMWARE_V': self.base_firmware_version, 
             }
 
-            # Dont write metadata
+            # Could optinally write metadata to the file aswell
             try:
                 with open(self.filename, 'w') as f:
                     f.write(','.join(self.broadcastInfo.keys()))
@@ -160,7 +153,6 @@ class MeshScraper():
             print('Shouldnt have started BLE scan - No Nodes Discovered')
         
 
-
     def endBleScan(self):
         ''' 
         Function called when BLE scan ends 
@@ -170,7 +162,7 @@ class MeshScraper():
         '''
 
         print(' ------- SCAN RESULTS ------- ')
-        #First parse all the result data into the current file
+        # First parse all the result data into the current file
         for result_mesh_id in self.ble_scan_result:
             fileStr = f"{self.ble_scan_result[result_mesh_id]['TR_TIMESTAMP']}, {result_mesh_id}, {self.ble_scan_result[result_mesh_id]['ACK']}"
             print(fileStr)
@@ -291,11 +283,10 @@ class MeshScraper():
             self.broadcastInfo['TRACEROUTE'] = traceRoute if traceRoute != '' else 'N/A'
 
             # Discard if: self update, No message ID, encrypted etc ->
-            # Last check: while we are sending traceroutes dont write to file.
+            # While we are sending traceroutes dont write mesh data to file
             # Wait for the file init to be run before trying to write too it .... (Still want to print the outputs though)
 
             if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and (self.init_file_bool) and not (self.ble_scan):
-                #unsure How but sometimes BaseId still ends up in the unique IDs
 
                 with open(self.filename, 'a') as f:
                     f.write(','.join(str(x) for x in self.broadcastInfo.values()))
@@ -308,10 +299,10 @@ class MeshScraper():
 
 
     def _ble_scan_traceroute_response(self, line, index):
-        ''' #If we are scanning for responses: Get the ACK=True or False them from the traceroute: '''
-
+        ''' #If we are scanning for responses: Get the ACK=True or False from the traceroute: '''
         # We have a TraceRoute with the correct ID -> ACK = True (Need to remove '\r)
-        #This might not always work -> traceroutes may have an ide for a node we havent searched for yet in them...
+        # This might not always work -> traceroutes may have an id for a node we havent searched for yet in them ...
+
         try:
             trace_mesh_id = line.split(' ')[index+1].replace('\r', '')
             if trace_mesh_id in self.unique_id_array:
@@ -320,14 +311,12 @@ class MeshScraper():
                     self.ble_scan_result[trace_mesh_id]['ACK'] = True
                     self.ble_scan_result[trace_mesh_id]['RESPONSE_WAIT_TIME'] = time.time() - self.ble_scan_result[trace_mesh_id]['START_TIME']
                 
-
         # -> or somehow we are looking for baseID or the result dict does not have the Id we have found
         except Exception as e:
-            print(f'EXCEPT: {e}')
+            print(f'Exeption in scanning ble response: {e}')
             pass
 
 
-             
 if __name__ == '__main__':
     folder_path = datetime.datetime.now().strftime(f"dataGathering/%Y_%m_%d/")
 
@@ -346,8 +335,10 @@ if __name__ == '__main__':
     meshScraper = MeshScraper(ser_port=port_dev)
     meshScraper.begin()
 
+    # Running this as main just outputs the serial data to terminal - no need to save it to a csv ....
+
     # filename = datetime.datetime.now().strftime(f"SCRAPE_SERIAL_%Y%m%d_%H:%M:%S.csv")
-    # meshScraper.init_file(filename=folder_path + filename) #For testing just print the data dont need to keep it
+    # meshScraper.init_file(filename=folder_path + filename) 
 
     try:
         counter = 0
