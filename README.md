@@ -1,7 +1,7 @@
 # Meshtastic Scraper
 
 ## HARDWARE TUTORIAL FROM SCRATCH
-1. Install firmware to board 
+1. Install firmware to board: https://flasher.meshtastic.org (or other method)
 2. Connect to board via bluetooth using the meshtastic app on the same PC that it is connect to via serial
         ^ may require 'forgetting' the device on bluetooth settings first
 3. Set lora.region to EU_868 (or relevent region)
@@ -10,6 +10,17 @@
 
 
 ## SOFTWARE TUTORIAL FROM SCRATCH
+1. CREATE the pip venv:
+$ python3 -m venv meshScraperEnv
+
+2. ACTIVATE IT
+$ source meshScraperEnv/bin/activate
+
+3. INSTALL packadges into it
+$ pip install -r requirements.txt
+
+
+
 1. in a new directory: git clone .....
 2. make a new pip env ....
 3. run the pip install in the env
@@ -18,15 +29,14 @@
 
 
 ### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only using Beta/Stable versions)
-- 2.3.10 (2.3.10.d19607b) -> ❌ NOT RECCOMENDED Occasionally get Getting strange outputs in the serial data - may have just been a one off
-
+- 2.3.10 (2.3.10.d19607b) -> ✅ WORKS Occasionally get Getting strange outputs in the serial data - may have just been a one off
 - 2.3.11 (2.3.11.2740a56) -> ✅ WORKS 
 - 2.3.12 (2.3.12.24458a7) -> ✅ WORKS  
 - 2.3.13 (2.3.13.83f5ba0) -> ✅ WORKS 
 
 ###### Version 2.3.15 and above add colour to the serial debug - requires removal using utils.remove_ansi_escape()
-- 2.3.15 (2.3.15.deb7c27) -> WORKS
-- 2.4.0 (2.4.0.46d7b82) -> WORKS
+- 2.3.15 (2.3.15.deb7c27) -> ✅ WORKS
+- 2.4.0 (2.4.0.46d7b82) ->  ✅WORKS
 
 ### PYTHON MESHTASTIC CLI VERSIONS (Will have a reccomended version in the requirements.txt): 
 - 2.3.11 -> ❌ FAILS (client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input)

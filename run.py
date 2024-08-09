@@ -17,9 +17,13 @@ from time import strftime, localtime
 from mesh_scraper import MeshScraper
 from utils import sendTraceRoute
 
-sys.path.append('/Users/ethan/Desktop/Summer_Internship_2024/Rssi_and_snr_tests/MLDataScraping/pythonmaster_v2')
+# sys.path.append('/Users/ethan/Desktop/Summer_Internship_2024/Rssi_and_snr_tests/MLDataScraping/pythonmaster_v2')
+
 import meshtastic
 from meshtastic.ble_interface import BLEInterface
+
+print("meshtastic module location:", os.path.dirname(meshtastic.__file__))
+time.sleep(10)
 
 #Dont really want theese called into both -> maybe just put it into the mesh scraper class and use it from there
 config = configparser.ConfigParser()
@@ -42,7 +46,9 @@ async def setup_node():
     print("Setup")
 
     #Definetly need to make this moodular --> just run the install.sh or somthing
-    try: 
+    #Also what happens with the meshtastic gloable path when i do a fresh install? - will the code below work?
+
+    try:
         resp = subprocess.getoutput(f'{MESHTSTIC_GLOABLE_PATH} --info') # resp = subprocess.getoutput('meshtastic --info') 
         respSplit = resp.split('\n')[2].split(' ')
     except Exception as e:

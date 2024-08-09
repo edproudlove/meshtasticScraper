@@ -1,7 +1,13 @@
 #Usefull functions for parsing scraped data etc
 import re
-import meshtastic.mesh_pb2 as mesh_pb2
-import meshtastic.portnums_pb2 as portnums_pb2
+
+#Version 2.3.13 changed theese imports:
+try:
+    import meshtastic.mesh_pb2 as mesh_pb2
+    import meshtastic.portnums_pb2 as portnums_pb2
+except ImportError:
+    from meshtastic.protobuf import mesh_pb2, portnums_pb2
+
 
 def remove_ansi_escape(output):
     ''' Function removes ansi escape charictors 
