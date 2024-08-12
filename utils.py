@@ -1,7 +1,9 @@
 # Usefull functions for parsing scraped data etc
 import re
+import random
+import string
 
-# Meshtastic Version 2.3.13 changed theese imports:
+# Meshtastic cli version 2.3.13 changed theese imports:
 try:
     import meshtastic.mesh_pb2 as mesh_pb2
     import meshtastic.portnums_pb2 as portnums_pb2
@@ -16,30 +18,32 @@ def remove_ansi_escape(output):
     # ansi_escape = re.compile(r'\x1b\[[0-9;]*m')
     ansi_escape = re.compile(r'(?:\x1b[@-_][0-?]*[ -/]*[@-~])') #More thorough
     
-    # Remove ANSI escape codes
+    # Remove ANSI escape codes and null characters
     cleaned_output = ansi_escape.sub('', output)
-
-    # Remove null characters
     cleaned_output = cleaned_output.replace('\x00', '')
 
-    #Considering adding '\x1b[0m' to the output to ensure the terminal is always white (asi escape reset)
-    
+    # Considering adding '\x1b[0m' to the output to ensure the terminal is always white (asi escape reset)
+
     return cleaned_output
 
 
 
 def findOccourance(listToSearch, tragetString):
+    ''' Finds and replaces the target string in the listToSearch '''
+
     for i in range(len(listToSearch)):
         if tragetString in listToSearch[i]:
             # First half replaces what we are looking for with '', second removes anything in "(),"
-            returnString = listToSearch[i].replace(tragetString, '').translate({ord(c): None for c in '(),'})            
-            # Hacky again - If after removing all the above, it things msg= is the time (searching for ms) - so if it still includes an '=' its wrong 
+            returnString = listToSearch[i].replace(tragetString, '').translate({ord(c): None for c in '(),'})         
+
+            # Hacky again - after removing the above it thinks msg= is the time (searching for ms) 
+            # So if it still includes an '=' after replacaing the part we are searching for its wrong 
             if '=' in returnString:
                 continue
             else:
-                return returnString.replace('\r', '') #If it includes '\r' remove it
+                return returnString.replace('\r', '')
 
-    #If its not there return N/A
+    # If its not there return N/A
     return 'N/A'
 
 
@@ -50,7 +54,7 @@ def sendTraceRoute(client, dest, hopLimit):
     -> This fuction does exactly the same but with out the timeout or onResponse() 
     Both of theese are done in the main() loop or in meshScraper - just look at the serial output to see if we got a response
     
-    (basically a copy of the python cli function)
+    (basically a copy of the python cli function without the timeout or waiting for a response to get ACK=True)
     '''
     r = mesh_pb2.RouteDiscovery()
     client.sendData(
@@ -61,3 +65,11 @@ def sendTraceRoute(client, dest, hopLimit):
         channelIndex=0,
         hopLimit=hopLimit,
     )
+
+def generate_test_id():
+    ''' Generates a random string of letters and numbers that is 12 long '''
+
+    random_string = ''.join(random.choices(string.ascii_letters + string.digits, k=12))
+    return random_string
+
+

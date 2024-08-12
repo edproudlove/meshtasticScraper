@@ -11,6 +11,7 @@ import os
 from serial.tools import list_ports
 from utils import findOccourance, remove_ansi_escape
 
+# This config stuff is only needed for the metadata, if its not written to the file it can be removed.
 config = configparser.ConfigParser()
 config.read('config.ini')
 
@@ -18,7 +19,6 @@ SCRAPE_INTERVAL = config.getint('SETTINGS', 'interval', fallback=600)
 RESPONSE_WAIT = config.getint('SETTINGS', 'response', fallback=120)
 CONTINUOUS = config.getboolean('SETTINGS', 'continuous', fallback=False)
 HOP_LIMIT = config.getint('SETTINGS', 'hoplimit', fallback=3)
-
 ANTENNA = config.get('NODE_CONFIG', 'antenna', fallback='mini')
 TX_POWER = config.getint('NODE_CONFIG', 'txPower', fallback=27)
 BAND = config.get('NODE_CONFIG', 'band', fallback='EU_868')
@@ -27,17 +27,16 @@ class MeshScraper():
     def __init__(self, ser_port): 
         self.ser = serial.Serial(port=ser_port, baudrate=115200)
         self.filename = None
-
         self.base_id = None
         self.base_firmware_version =  None
-        
+
+        self.init_file_bool = False
         self.unique_id_array = []
         self.ble_scan = False
         self.ble_scan_result = {}
-        
-        self.meshTread = threading.Thread(target=self.scrape, args=(), daemon=True)
-        self.init_file_bool = False
 
+        self.meshTread = threading.Thread(target=self._scrape, args=(), daemon=True)
+        
         self.broadcastInfo = {
             'TIME': 'N/A', 
             'MESSAGE_TYPE': 'N/A',
@@ -60,17 +59,19 @@ class MeshScraper():
 
     
     def init_file(self, filename, is_results=False):
-        ''' Instantiate file and write metadata to it
+        ''' Create file and Optionally write metadata to it
 
-        Should be called after begin and after BleEnd to change the file for diffrent data
+        Should be called after begin() and after endBleScan() to change the file for diffrent data
         
-        Filename = name of file to create (needs to include a foler name)
-        is_results = is this a results file - means the column names will be diffrent
+        Filename: name of file to create (needs to include the folder name if there is one)
+        is_results: is this a results file - means the column headers will be diffrent
+
         '''
 
-        # Create file (Could call this in the begin function but its called just before the main loop to get exactly 2 mins)
+        # Create file (Could call this in the begin function but its called just before the main loop to get exactly the interval time)
         self.filename = filename
-        print(f' Writing to: {self.filename}')
+
+        print(f'Writing to: {self.filename}')
 
         if is_results:
             try:
@@ -98,20 +99,18 @@ class MeshScraper():
                 'FIRMWARE_V': self.base_firmware_version, 
             }
 
-            # Could optinally write metadata to the file aswell
+            # Could write metadata to the file aswell - This just writes the broadcastInfo keys as column headers
             try:
                 with open(self.filename, 'w') as f:
                     f.write(','.join(self.broadcastInfo.keys()))
                     f.write('\n')
-                    
             except Exception as e:
                 print(f'Error Writing to File: {e}')
 
-            #Allow mesh-data to be written into the file aswell (_parseScrapeData)
+            #Allow mesh-data to be written into the file aswell in (_parseScrapeData)
             self.init_file_bool = True
 
-
-    #Taken begin() and close() are adpated from meshtastic python docs
+    # Both begin() and close() are adpated from meshtastic python docs: https://github.com/meshtastic/python/blob/master/meshtastic/stream_interface.py
     def begin(self):
         '''Begining the thread '''
         
@@ -131,9 +130,8 @@ class MeshScraper():
         ''' 
         Function called before BLE scan starts 
         
-        -> tells class we are currently waiting for traceroute response
-        -> writes a break in the file
-        -> instantiates the result dictionary
+        -> Tells class we are currently waiting for traceroute response
+        -> Populates the result dictionary
         '''
 
         print('------------------------------------------------------------------')
@@ -150,7 +148,7 @@ class MeshScraper():
                     'RESPONSE_WAIT_TIME': None,
                 }
         else:
-            print('Shouldnt have started BLE scan - No Nodes Discovered')
+            print('Should not have started BLE scan - No Nodes Discovered')
         
 
     def endBleScan(self):
@@ -161,14 +159,14 @@ class MeshScraper():
         -> and updates self vars essentially a reset() (and other things)
         '''
 
-        print(' ------- SCAN RESULTS ------- ')
+        print('------- SCAN RESULTS -------')
         # First parse all the result data into the current file
         for result_mesh_id in self.ble_scan_result:
             fileStr = f"{self.ble_scan_result[result_mesh_id]['TR_TIMESTAMP']}, {result_mesh_id}, {self.ble_scan_result[result_mesh_id]['ACK']}"
             print(fileStr)
             self.writeToFile(text=fileStr)
 
-        # Reset -> Call init_after this with new filename (if its continuous)
+        # Reset -> Call init_file() after this with new filename (if its continuous)
         self.init_file_bool = False 
         self.ble_scan = False
         self.ble_scan_result = {}
@@ -186,7 +184,7 @@ class MeshScraper():
             print(f'Error Writing to File: {e}')
 
 
-    def scrape(self):
+    def _scrape(self):
         ''' Thread that scrapes the Serial Data '''
 
         try: 
@@ -198,8 +196,8 @@ class MeshScraper():
                     out += self.ser.read(1).decode("latin-1")
                     
                 if len(out) > 1:
-                    #Need to remove the ansi escape chars (color) if firmware > 2.3.15
-                    #Review remove_ansi_escape if serial output text is strange/garbled
+                    # Need to remove the ansi escape chars (color) if firmware > 2.3.15 - Nothing happens if firmware < 2.3.15 so no need to remove
+                    # Review remove_ansi_escape if serial output text is strange/garbled
                     self._parseScrapeData(remove_ansi_escape(out)) 
 
         except Exception as e: 
@@ -208,7 +206,7 @@ class MeshScraper():
             
 
     def _parseScrapeData(self, serialOutput):
-        ''' Function to parse the raw Serial Data into a file with a specified path '''
+        ''' Function to parse the raw serial data into a file with a specified path '''
 
         outSplit = serialOutput.split('\n')
 
@@ -218,9 +216,9 @@ class MeshScraper():
             traceRoute = ''
             
             for line in outSplit:
-                print(remove_ansi_escape(line)) #Should have already had this called on the entire output data 
+                print(line) # For debugging
 
-                #Hacky method of pasring traceroutes: finding the "-->" in the string
+                # Hacky method of processing traceroutes: finding the "-->" in the line
                 if '-->' in line:
                     
                     #For each word in the line find the index of '-->'
@@ -236,18 +234,13 @@ class MeshScraper():
                                 if traceRoute == '':
                                     traceRoute = line.split(' ')[i-1] + ' --> ' + line.split(' ')[i+1]
 
-                                #We have a multi traceroute (more than 1 '-->')
+                                # We have a multi traceroute (more than 1 '-->')
                                 else:
                                     traceRoute += ' --> ' + line.split(' ')[i+1]
                             except:
                                 pass
-                
 
-                # -> remove if you want network data in the file during the scan
-                # elif self.ble_scan:
-                #     continue
-
-                #Hacky method of finding the message type, basically where is says Recived it usally says the message type after:
+                # Hacky method of finding the message type: where is says "Recived" it says the message type after:
                 if 'Received' in line:
                     for i in range(len(line.split(' '))):
                         if line.split(' ')[i] == 'Received':
@@ -257,17 +250,17 @@ class MeshScraper():
                             except:
                                 pass
             
-                # The requirements for a word to be considered important/retained:
+                # The requirements for a word to be considered important and retained:
                 importantContents.extend([x for x in line.split(' ') if ('=' in x) or ('ms' in x)])
 
-            # findOccourance finds the first occourance - sorting ensures its the longest occourance (most info)
+            # findOccourance finds the first occourance - sorting ensures its the longest (most info)
             importantContents.sort(key=lambda s: len(s))
             importantContents.reverse()
 
             self.broadcastInfo['TIME'] = datetime.datetime.now().strftime("%Y%m%d_%H:%M:%S") 
             self.broadcastInfo['MESSAGE_TYPE'] = messageType if messageType != '/' else 'N/A' #Replace '/' with 'N/A'
             self.broadcastInfo['AIR_TIME'] = findOccourance([word for word in importantContents if 'g' not in word], 'ms')
-            self.broadcastInfo['RX_TIME'] = findOccourance(importantContents, 'rxtime=') #filter out msg and floodmsg
+            self.broadcastInfo['RX_TIME'] = findOccourance(importantContents, 'rxtime=') 
             self.broadcastInfo['MESSAGE_ID'] = findOccourance(importantContents, '(id=') 
             self.broadcastInfo['NODE_ID'] = findOccourance(importantContents, 'from=') 
             self.broadcastInfo['SNR'] = findOccourance(importantContents, 'rxSNR=')
@@ -282,9 +275,8 @@ class MeshScraper():
             self.broadcastInfo['LON'] = findOccourance(importantContents, 'lonI=')
             self.broadcastInfo['TRACEROUTE'] = traceRoute if traceRoute != '' else 'N/A'
 
-            # Discard if: self update, No message ID, encrypted etc ->
-            # While we are sending traceroutes dont write mesh data to file
-            # Wait for the file init to be run before trying to write too it .... (Still want to print the outputs though)
+            # Don't write to file if: self update, No message ID, encrypted, while we are sending traceroutes and waiting for responses, etc
+            # Also wait for the file_init() to be run before trying to write too it .... (Still want to print the outputs)
 
             if (self.broadcastInfo['NODE_ID'] not in ['0x0', 'N/A', self.base_id]) and (self.broadcastInfo['MESSAGE_ID'] != 'N/A') and (self.init_file_bool) and not (self.ble_scan):
 
@@ -292,26 +284,34 @@ class MeshScraper():
                     f.write(','.join(str(x) for x in self.broadcastInfo.values()))
                     f.write('\n')
             
-                # If we havent seen this UsersID before, and its not our own, and were not doing a ble scan -> append to unique ID list
-                if self.broadcastInfo['NODE_ID'] not in self.unique_id_array and not self.ble_scan:
+                # If we havent seen this NODE_ID before append to unique_id_array
+                if self.broadcastInfo['NODE_ID'] not in self.unique_id_array:
                     self.unique_id_array.append(self.broadcastInfo['NODE_ID'])
                     print(self.unique_id_array)
 
 
     def _ble_scan_traceroute_response(self, line, index):
-        ''' #If we are scanning for responses: Get the ACK=True or False from the traceroute: '''
-        # We have a TraceRoute with the correct ID -> ACK = True (Need to remove '\r)
-        # This might not always work -> traceroutes may have an id for a node we havent searched for yet in them ...
+        ''' 
+        If we are scanning for responses: Get the ACK=True or False from the traceroute
+        
+        If self.ble_scan (we are looking for traceroute responses) - if we recive a traceroute with an ID we are looking for 
+        ACK=True, otherwise ACK=False
+
+        '''
 
         try:
             trace_mesh_id = line.split(' ')[index+1].replace('\r', '')
             if trace_mesh_id in self.unique_id_array:
-                #If already seen it or we havent started looking for it yet move on
-                if not (self.ble_scan_result[trace_mesh_id]['ACK']) and (self.ble_scan_result[trace_mesh_id]['START_TIME'] is not None): #i.e if Start time has been set -> we are looking for this one
+                # We have a TraceRoute with the correct ID -> ACK = True (Need to remove '\r)
+                
+                if not (self.ble_scan_result[trace_mesh_id]['ACK']) and (self.ble_scan_result[trace_mesh_id]['START_TIME'] is not None): 
+                    # If we have already seen it or havent started looking for it yet move on (if START_TIME has been set we have sent a traceroute to this one)
+                    # Otherwise update result dict
+            
                     self.ble_scan_result[trace_mesh_id]['ACK'] = True
                     self.ble_scan_result[trace_mesh_id]['RESPONSE_WAIT_TIME'] = time.time() - self.ble_scan_result[trace_mesh_id]['START_TIME']
                 
-        # -> or somehow we are looking for baseID or the result dict does not have the Id we have found
+        # We are looking for baseID or the result dict does not have the ID we have found - The if checks should catch this before an Exception ...
         except Exception as e:
             print(f'Exeption in scanning ble response: {e}')
             pass
@@ -324,8 +324,6 @@ if __name__ == '__main__':
         os.makedirs(folder_path)
         print(f"Created folder: {folder_path}")
 
-
-    # Not handeling multiple serial ports at the moment
     for port in list_ports.comports():
         if port.vid is not None:
             print(f" Serial Port Found: {port.device}")
