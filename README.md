@@ -11,7 +11,7 @@
 4. Disconnect Bluetooth from the node.
 5. Update `config.ini` accordingly and follow the software steps.
 
-## Software SETUP
+## Software Setup
 1. Create the pip virtual environment: (Alternatively, use conda environment; this is just an example - p.s. change `meshScrapeEnv` to whatever name you want)
     ```bash
     python3 -m venv meshScraperEnv
