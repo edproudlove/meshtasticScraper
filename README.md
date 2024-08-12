@@ -11,7 +11,7 @@
 4. Disconnect Bluetooth from the node.
 5. Update `config.ini` accordingly and follow the software steps.
 
-## SOFTWARE SETUP
+## Software SETUP
 1. Create the pip virtual environment: (Alternatively, use conda environment; this is just an example - p.s. change `meshScrapeEnv` to whatever name you want)
     ```bash
     python3 -m venv meshScraperEnv
@@ -33,7 +33,7 @@
     python3 run.py
     ```
 
-### COMPATABLE BOARD FIRMWARE VERSIONS (Which firmware versions the run.py code works for - only considering Beta/Stable versions)
+### Compatable board firmware versions (which firmware versions the run.py code works for - only considering Beta/Stable versions)
 - 2.3.10 (2.3.10.d19607b) -> ✅ WORKS
 - 2.3.11 (2.3.11.2740a56) -> ✅ WORKS 
 - 2.3.12 (2.3.12.24458a7) -> ✅ WORKS  
@@ -44,12 +44,12 @@
 - 2.4.0 (2.4.0.46d7b82) ->  ✅ WORKS
 - 2.4.1 (2.4.1.394e0e1) ->  ✅ WORKS
 
-### PYTHON MESHTASTIC CLI VERSIONS (Will have a reccomended version in the requirements.txt): 
+### Python meshtastic CLI versions (use reccomended version in the requirements.txt): 
 - 2.3.11 -> ❌ FAILS 
 - 2.3.12 -> ❌ FAILS 
 - 2.3.13 -> ❌ FAILS 
 
-###### In version 2.3.13 and below client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input - if you don't specify the hoplimit 
+###### In version 2.3.13 and below client.sendTraceRotue() and client.sendData() do not have a hoplimit argument as input - if you don't specify the hoplimit prvious versions should work
 - 2.3.14 -> ✅ WORKS (sendTraceRoute hoplimit fixed in the changelogs: [Meshtastic Python Releases](https://github.com/meshtastic/python/releases))
 
 
