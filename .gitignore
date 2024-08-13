@@ -10,3 +10,4 @@ node_config.yaml
 .DS_Store
 meshScraperEnv/
 TestingMesh.log
+.gitignore
