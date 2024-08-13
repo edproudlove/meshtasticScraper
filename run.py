@@ -96,17 +96,17 @@ def main():
     Main loop
 
     Will listen to the network for SCRAPE_INTERVAL seconds and record all network traffic to:
-    /dataGathering/%Y_%m_%d/YYMMDD_HHMM_testID_Band.csv (folder created below)
+    /data/YYMMDD/YYMMDD_HHMM_TestID_Band.csv (folder created below)
 
     After the interval a Trace Route is sent to each unique ID found during the scraping process, 
     wether or not we recived a response is recorded in:
-    /dataGathering/%Y_%m_%d/YYMMDD_HHMM_testID_Band_Power_hoplimit.csv
+    /data/YYMMDD/YYMMDD_HHMM_TestID_Band_Power_Hoplimit.csv
 
-    Outcome: pairs of files with the same testID showing before and after the TraceRoute response
+    Outcome: pairs of files with the same TestID showing before and after the TraceRoute response
     '''
 
     # Making a folder with the date -> Alter as needed
-    folder_path = datetime.datetime.now().strftime(f"dataGathering/%Y_%m_%d/")
+    folder_path = datetime.datetime.now().strftime(f"data/%Y%m%d/")
 
     if not os.path.exists(folder_path):
         os.makedirs(folder_path)

@@ -1,0 +1,7 @@
+TIME,MESSAGE_TYPE,AIR_TIME,RX_TIME,MESSAGE_ID,NODE_ID,SNR,RSSI,BANDWIDTH,SPREADING_FACTOR,CODING_RATE,HOP_LIMT,HOP_START,PAYLOAD_SIZE,LAT,LON,TRACEROUTE
+20240809_12:02:26,/nodeinfo/,N/A,N/A,0x699ef4ab,0x75ee06b4,11,-51,N/A,N/A,N/A,2,2,N/A,N/A,N/A,N/A
+20240809_12:02:26,/routing/an/,N/A,N/A,0x699ef4ab,0x75ee06b4,11,-51,N/A,N/A,N/A,2,2,N/A,N/A,N/A,N/A
+20240809_12:03:23,/DeviceTelemetry/EnvironmentTelemetry/PowerTelemetry/routing/,583,N/A,0x699ef4ac,0x75ee06b4,13,-53,250,11,4/5,3,3,47,N/A,N/A,N/A
+20240809_12:03:38,/position/routing/,N/A,N/A,0x699ef4ad,0x75ee06b4,12.25,-52,N/A,N/A,N/A,3,3,N/A,538103583,-15570007,N/A
+20240809_12:04:05,/DeviceTelemetry/EnvironmentTelemetry/PowerTelemetry/routing/,591,N/A,0x69665812,0xe2e38b8c,12,-51,N/A,N/A,N/A,2,3,N/A,N/A,N/A,N/A
+20240809_12:04:19,/DeviceTelemetry/EnvironmentTelemetry/PowerTelemetry/routing/,591,N/A,0x087e23e3,0x43579884,12.75,-51,N/A,N/A,N/A,1,5,N/A,N/A,N/A,N/A
