@@ -1,18 +1,31 @@
 # Meshtastic Scraper
 
+## Description
 - Python code to scrape mesh network traffic through the serial port of the [Lilygo T3S3](https://www.lilygo.cc/products/t3s3-v1-0) board. Built on top of [Meshtastic Python](https://github.com/meshtastic/python).
-- Used to create a dataset of file pairs: 2 minutes of network traffic -> whether traceRoutes to each of the nodes in the mesh are acknowledged or not.
+- Used to create a dataset of file pairs: 2 minutes of network traffic -> whether TraceRoutes to each of the nodes in the mesh are acknowledged or not.
+- `$ python run.py` will scrape the serial output of the node for 2 minuets, and parse every packet it receives into a file called `YYMMDD_HHMM_TestID_Band.csv` in a folder called `/data/YYMMDD/`.
+
+- After 2 minuets, TraceRoutes are sent to each unique node we received a packet from during the ‘scraping’ phase. Whether we received a response from each is recorded in `YYMMDD_HHMM_TestID_Band_Power_Hoplimit.csv` (in the same folder as the previous file). See /data for examples.  
+
+1. TestID = Random string of 12 chars, unique identifier for each pair of pre/post TraceRoute data
+2. Band = Frequency band transmissions are done on (EU_868 MHz for this dataset)
+3. Power = Transmission power measured in dB (lora.tx_power)
+4. Hoplimit = Hop limit of the TraceRoutes sent
+
+- Each can be set in `config.ini`, along with the time spent in the ‘scraping phase’ (interval) and the time the code will wait for a traceroute response before considering it failed/timeout (response).
+- Continuous mode will loop the code – after receiving the traceroutes it will start scraping the network again. 
+
 
 ## Hardware Setup
-
 1. Install firmware to the board: [Meshtastic Flasher](https://flasher.meshtastic.org) (or alternative method: [Meshtastic Firmware](https://github.com/meshtastic/firmware)).
 2. Connect to the board via Bluetooth using the Meshtastic app on the same PC that is connected to it via serial (you may need to 'forget' the device in the PC's Bluetooth settings if you have previously connected to it via Bluetooth before a reset or firmware flash).
 3. Set LoRa region to EU_868 (or the relevant region - remember to change `config.ini` / filename).
 4. Disconnect Bluetooth from the node.
 5. Update `config.ini` accordingly and follow the software steps.
 
+
 ## Software Setup
-1. Create the pip virtual environment: (Alternatively, use conda environment; this is just an example - p.s. change `meshScrapeEnv` to whatever name you want)
+1. Create the pip virtual environment: change `meshScrapeEnv` to whatever name you want (Alternatively, use conda or whatever is prefered)
     ```bash
     python3 -m venv meshScraperEnv
     ```
@@ -33,7 +46,9 @@
     python3 run.py
     ```
 
-### Compatable board firmware versions (which firmware versions the run.py code works for - only considering Beta/Stable versions)
+## Compatibility
+
+#### Compatable board firmware versions (which firmware versions the run.py code works for - only considering Beta/Stable versions)
 - 2.3.10 (2.3.10.d19607b) -> ✅ WORKS
 - 2.3.11 (2.3.11.2740a56) -> ✅ WORKS 
 - 2.3.12 (2.3.12.24458a7) -> ✅ WORKS  
@@ -44,7 +59,7 @@
 - 2.4.0 (2.4.0.46d7b82) ->  ✅ WORKS
 - 2.4.1 (2.4.1.394e0e1) ->  ✅ WORKS
 
-### Python meshtastic CLI versions (use reccomended version in the requirements.txt): 
+#### Python meshtastic CLI versions (use reccomended version in the requirements.txt): 
 - 2.3.11 -> ❌ FAILS 
 - 2.3.12 -> ❌ FAILS 
 - 2.3.13 -> ❌ FAILS 
@@ -70,6 +85,7 @@
 - Implement own timeouts / sendTraceRoute - Don’t use CLI.
 - Flash most recent firmware and go through every step to make documentation/tutorial + conda/env setup from a fresh PC.
 - Add a test ID because it's hard to tell what file and results are a pair.
+- Add example data to github
 
 #### Doing
 
@@ -84,4 +100,3 @@
 - Implement sendText instead of traceRoute.
 - Find/set band dynamically.
 - Handle multiple serial ports.
-- Add example data to github
