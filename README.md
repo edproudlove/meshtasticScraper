@@ -1,6 +1,6 @@
 # Meshtastic Scraper
 
-- Python code to scrape mesh network traffic through the serial port of the Lilygo T3S3 board ([Lilygo T3S3](https://www.lilygo.cc/products/t3s3-v1-0)). Built on top of [Meshtastic Python](https://github.com/meshtastic/python).
+- Python code to scrape mesh network traffic through the serial port of the [Lilygo T3S3](https://www.lilygo.cc/products/t3s3-v1-0) board. Built on top of [Meshtastic Python](https://github.com/meshtastic/python).
 - Used to create a dataset of file pairs: 2 minutes of network traffic -> whether traceRoutes to each of the nodes in the mesh are acknowledged or not.
 
 ## Hardware Setup
@@ -84,3 +84,4 @@
 - Implement sendText instead of traceRoute.
 - Find/set band dynamically.
 - Handle multiple serial ports.
+- Add example data to github
